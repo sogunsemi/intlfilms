@@ -5,16 +5,16 @@ class Movie(object):
 	"""	
 	def __init__(self):
 		self.data = {}
-		data["id"] = 0
-		data["overview"] = ""
-		data["release_date"] = ""
-		data["genres"] = []
-		data["title"] = ""
-		data["original_title"] = ""
-		data["original_language"] = ""
-		data["vote_average"] = ""
-		data["backdrop_path"] = ""
-		data["poster_path"] = ""
-		data["runtime"] = ""
-		data["status"] = ""
-		data["cast"] = []
+		self.data["id"] = 0
+		self.data["overview"] = ""
+		self.data["release_date"] = ""
+		self.data["genres"] = []
+		self.data["title"] = ""
+		self.data["original_title"] = ""
+		self.data["original_language"] = ""
+		self.data["vote_average"] = ""
+		self.data["backdrop_path"] = ""
+		self.data["poster_path"] = ""
+		self.data["runtime"] = ""
+		self.data["status"] = ""
+		self.data["cast"] = []

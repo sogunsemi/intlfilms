@@ -5,6 +5,12 @@ import time
 import requests
 import json
 
+# Set system default encoding to utf-8. This way,
+# movie/cast names with special chars can be displayed
+import sys
+reload(sys)
+sys.setdefaultencoding('utf-8')
+
 MAX_ENTRIES = 10
 
 MAX_CAST = 5
@@ -87,6 +93,7 @@ def init_movie_list():
                 movie_entry.cast.append(Cast(character=character, name=name))
                 cast_num += 1
 
+            # Add created movie to DB
             try:
                 session = DBSession() 
                 session.add(movie_entry)
@@ -172,13 +179,22 @@ def collect_data(mDict):
 # Main entry point of program
 def main():
     init_db()
+    #init_movie_list()
     
     session = DBSession()
     
     q = session.query(Movie.m_id, Movie.title)
     for movie in q:
         print movie.m_id, movie.title
-    DBSession.remove()
+
+    q = session.query(Movie)
+    for movie in q:
+        for g in movie.genres:
+            print g.name,
+        print "\n"
+        for c in movie.cast:
+            print "{} - {},".format(c.character, c.name),
+        print "\n"
     
     '''
     session.query(Movie).delete()

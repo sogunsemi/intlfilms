@@ -1,8 +1,9 @@
 import sys
 from config import API_KEY
-from model import init_db, DBSession, Movie, Genre, Cast
+from model import init_db, DBSession, Movie, Genre, Cast, movie_genres
 import time
 import requests
+import sqlalchemy
 import json
 
 # Set system default encoding to utf-8. This way,
@@ -80,27 +81,46 @@ def init_movie_list():
                     vote_average=vote_average, backdrop_path=backdrop_path,
                     poster_path=poster_path, runtime=runtime, status=status)
 
-            for genre in details["genres"]:
-                genre_name = genre["name"]
-                movie_entry.genres.append(Genre(name=genre_name))
+            m_genres = []
+            try:
+                session = DBSession()
+                for genre in details["genres"]:
+                    genre_name = genre["name"]
+                    
+                    genre_row = session.query(Genre).filter(Genre.name == genre_name).one_or_none()
+                    if genre_row is None:
+                        #movie_entry.genres.append(Genre(name=genre_name))
+                        m_genres.append(Genre(name=genre_name))
+                    else:
+                        #movie_entry.genres.append(genre_row)
+                        m_genres.append(genre_row)
+            except sqlalchemy.orm.exc.MultipleResultsFound as e:
+                print "Duplicate genre \"{}\" found".format(genre_name)
+            finally:
+                DBSession.remove()
 
+            m_cast = []
             cast_num = 0
             for cast_member in details["credits"]["cast"]:
                 if cast_num == MAX_CAST:
                     break
                 character = cast_member["character"] 
                 name = cast_member["name"]
-                movie_entry.cast.append(Cast(character=character, name=name))
+                #movie_entry.cast.append(Cast(character=character, name=name))
+                m_cast.append(Cast(character=character, name=name))
                 cast_num += 1
 
             # Add created movie to DB
             try:
-                session = DBSession() 
+                session = DBSession()
+                movie_entry.genres.extend(m_genres)
+                movie_entry.cast.extend(m_cast)
                 session.add(movie_entry)
                 session.commit()
                 DBSession.remove()
-            except sqlalchemy.exc.SQLAlchemyError:
+            except sqlalchemy.exc.SQLAlchemyError as e:
                 print "DB error during movie collection initialization"
+                print e
                 session.rollback()
             finally:
                 DBSession.remove()
@@ -109,9 +129,8 @@ def init_movie_list():
         try:
             session = DBSession() 
             m_count = session.query(Movie).count()
-            DBSession.remove()
         except sqlalchemy.exc.SQLAlchemyError:
-            print "DB error during movie collection initialization"
+            print "DB error during movie count operation"
             session.rollback()
         finally:
             DBSession.remove()
@@ -166,6 +185,15 @@ def send_request_with_retry(url, params):
             break
     return response
 
+def deleteMovie(tmdb_id):
+    
+    session = DBSession()
+    d_movie = delete_movie = session.query(Movie).filter(Movie.m_id == tmdb_id).one()
+    del d_movie.cast[:]
+    session.delete(d_movie)
+    session.commit()
+    DBSession.remove()
+
 # Collects movie data from the TMDB REST API and puts
 # the information into a dictionary
 def collect_data(mDict):
@@ -180,36 +208,29 @@ def collect_data(mDict):
 def main():
     init_db()
     #init_movie_list()
-    
+
     session = DBSession()
-    
-    q = session.query(Movie.m_id, Movie.title)
-    for movie in q:
-        print movie.m_id, movie.title
 
     q = session.query(Movie)
     for movie in q:
-        for g in movie.genres:
-            print g.name,
-        print "\n"
-        for c in movie.cast:
-            print "{} - {},".format(c.character, c.name),
-        print "\n"
+        print movie.id, movie.m_id, movie.title
     
-    '''
-    session.query(Movie).delete()
-    session.commit()
-    print "number of records {}".format(session.query(Movie).count())
-    DBSession.remove()
-    '''
+    print ""
+    
+    q = session.query(Genre)
+    for g in q:
+        print "{} - {}".format(g.id, g.name)
 
-    #init_movie_list()
-    
-    # session = DBSession() 
-    # m_count = session.query(Movie).count()
-    #print "Elements in DB {}".format(m_count)
+    print ""
+
+    q = session.query(Cast)
+    for cast in q:
+        print "{} -{} - {} - {}".format(cast.id, cast.movie_id, cast.character, cast.name)
+
+    DBSession.remove()
 
     #collect_data(mDict)
     
 if __name__ == "__main__":
-    main()	
+    main()
+

@@ -1,0 +1,3 @@
+MAX_ENTRIES = 10
+
+MAX_CAST = 5

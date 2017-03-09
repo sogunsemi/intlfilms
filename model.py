@@ -5,7 +5,6 @@ from sqlalchemy.ext.declarative import declarative_base
 #engine = create_engine('sqlite:///film.db')
 
 DecBase = declarative_base()
-DBSession = scoped_session(sessionmaker())
 
 movie_genres = Table(
         "movie_genres",
@@ -53,10 +52,17 @@ class Cast(DecBase):
     name = Column(String(255))
     movie_id = Column(Integer, ForeignKey("movie.id"))
 
-def init_db():
-    engine = create_engine('sqlite:///sqllite_film.db', echo=False)
-    DBSession.configure(bind=engine)
-    DecBase.metadata.create_all(engine)
+def create_db_engine(engine_str):
+    engine = create_engine(engine_str, echo=False)
+    #DBSession = scoped_session(sessionmaker())
+    #DBSession.configure(bind=engine)
+    return engine
+
+# Here we init the databae and create the tables.
+# We then discard all connections associated with the engine.
+init_engine = create_db_engine("sqlite:///sqllite_film.db")
+DecBase.metadata.create_all(init_engine)
+init_engine.dispose()
 
 if __name__ == "__main__":
     init_db()

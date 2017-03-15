@@ -1,28 +1,40 @@
+# -*- coding: utf-8 -*-
+
 import sys
 from config import API_KEY
 from model import create_db_engine, Movie, Genre, Cast, movie_genres
 from constants import MAX_ENTRIES, MAX_CAST
 import time
-import multiprocessing
 import requests
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker, scoped_session
 import json
 
-# Set system default encoding to utf-8. This way,
-# movie/cast names with special chars can be displayed
-import sys
-reload(sys)
-sys.setdefaultencoding('utf-8')
-
 # Initializes the dictionary we will use to store
 # data from the TMDB API with an initial movie list
 def init_movie_list():
 
-    print "Initializing International Movie DB..."
     engine = create_db_engine("sqlite:///sqllite_film.db")
     session_factory = sessionmaker(engine)
     DBSession = scoped_session(session_factory)
+
+    # If database is empty, initialize it,
+    # if not, skip init.
+    try:
+        session = DBSession()
+        q = session.query(Movie).first()
+        
+        # Check if the table has already been init'ed
+        if q is not None:
+            return
+    except sqlalchemy.exc.SQLAlchemyError as e:
+        print "DB error during initialization"
+        print e
+    finally:
+        DBSession.remove()
+    
+    print "Initializing International Movie DB..."
+
     m_count = 0
     
     # Prepare the request url
@@ -109,17 +121,6 @@ def init_movie_list():
         i_page += 1
         params["page"] = i_page
 
-    '''
-    session = DBSession()
-
-    q = session.query(Movie)
-    for movie in q:
-        print movie.id, movie.m_id, movie.title
-    DBSession.remove()
-    
-    print ""
-    '''
-                        
 # Retrieves extra details for a given movie
 def get_movie_details(m_id, fields):
 
@@ -174,10 +175,8 @@ def add_genres(Session, details):
 
             genre_row = session.query(Genre).filter(Genre.name == genre_name).one_or_none()
             if genre_row is None:
-                #movie_entry.genres.append(Genre(name=genre_name))
                 m_genres.append(Genre(name=genre_name))
             else:
-                #movie_entry.genres.append(genre_row)
                 m_genres.append(genre_row)
     except sqlalchemy.orm.exc.MultipleResultsFound as e:
         print "Duplicate genre \"{}\" found".format(genre_name)
@@ -194,7 +193,6 @@ def add_cast(details):
             break
         character = cast_member["character"] 
         name = cast_member["name"]
-        #movie_entry.cast.append(Cast(character=character, name=name))
         m_cast.append(Cast(character=character, name=name))
         cast_num += 1
     return m_cast
@@ -234,7 +232,6 @@ def collect_data():
             break
 
         m_list = parsed["results"]
-        #print "total results on page: {}".format(len(m_list))
 
         # Add movie info to database 
         for result in m_list:
@@ -321,37 +318,15 @@ def collect_data():
         i_page += 1
         params["page"] = i_page
     
-    '''
-    session = Session()
-    for m in top_movies:
-        print m
-    
-    session = Session()
-    print "\nMovies in DB BEFORE remove:\n"
-    q = session.query(Movie)
-    for movie in q:
-        print movie.id, movie.m_id, movie.title
-    Session.remove()
-    '''
-
     # Remove movies from DB not in top list we got from TMDB
     q = session.query(Movie).filter(~Movie.m_id.in_(top_movies))
     print "\nDeleted:"
     for movie in q:
-        print movie.title
+        print u"{}".format(movie.title)
         del movie.cast[:]
         session.delete(movie)
     session.commit()
     Session.remove()
-
-    '''
-    session = Session()
-    print "\nMovies in DB AFTER remove:\n"
-    q = session.query(Movie)
-    for movie in q:
-        print movie.id, movie.m_id, movie.title
-    Session.remove()
-    '''
 
 # Main entry point of program
 def main():

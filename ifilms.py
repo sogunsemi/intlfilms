@@ -10,9 +10,11 @@ import sqlalchemy
 from sqlalchemy.orm import sessionmaker, scoped_session
 import json
 
-# Initializes the dictionary we will use to store
-# data from the TMDB API with an initial movie list
 def init_movie_list():
+    """
+    Initializes the database we will use to store
+    data from the TMDB API with an initial movie list.
+    """
 
     engine = create_db_engine("sqlite:///sqllite_film.db")
     session_factory = sessionmaker(engine)
@@ -60,7 +62,6 @@ def init_movie_list():
             break
 
         m_list = parsed["results"]
-        #print "total results on page: {}".format(len(m_list))
 
         # Add movie info to database 
         for result in m_list:
@@ -121,9 +122,12 @@ def init_movie_list():
         i_page += 1
         params["page"] = i_page
 
-# Retrieves extra details for a given movie
 def get_movie_details(m_id, fields):
-
+    """
+    Retrieves extra movie details for a given movie
+    from the TMDB API.
+    """
+    
     # Build the url and add sub-requests that
     # will get appended to the JSON response
     s_fields = ",".join([str(f) for f in fields])
@@ -143,10 +147,12 @@ def get_movie_details(m_id, fields):
 
     return parsed
 
-# Makes all the API requests for the program
-# and implements retry functionality if
-# we hit the rate limit for the TMDB API
 def send_request_with_retry(url, params):
+    """
+    Makes all the API requests for the program
+    and implements retry functionality if
+    we hit the rate limit for the TMDB API
+    """
     response = None
     while True:
         response = requests.get(url, params=params)
@@ -158,7 +164,7 @@ def send_request_with_retry(url, params):
             # "Retry-After" seconds, if not, throw error
             if response.status_code == 429:
                 retry = int(response.headers["Retry-After"])
-                print "Sleep for {} seconds".format(retry)
+                #print "Sleep for {} seconds".format(retry)
                 time.sleep(retry)
             else:
                 raise requests.exceptions.RequestException("Bad status code, request unsuccessful!")
@@ -167,12 +173,18 @@ def send_request_with_retry(url, params):
     return response
 
 def add_genres(Session, details):
+    """
+    Create a list of genres for a particular movie.
+    If a genre associated with a movie is not found 
+    in our DB, we add it in.
+    """
     m_genres = []
     try:
         session = Session()
         for genre in details["genres"]:
             genre_name = genre["name"]
 
+            # If this genre is not in DB, add it
             genre_row = session.query(Genre).filter(Genre.name == genre_name).one_or_none()
             if genre_row is None:
                 m_genres.append(Genre(name=genre_name))
@@ -186,6 +198,7 @@ def add_genres(Session, details):
     return m_genres
 
 def add_cast(details):
+    """Create a cast list for a particular movie."""
     m_cast = []
     cast_num = 0
     for cast_member in details["credits"]["cast"]:

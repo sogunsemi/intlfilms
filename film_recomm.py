@@ -14,10 +14,22 @@ engine = create_db_engine("sqlite:///sqllite_film.db")
 session_factory = sessionmaker(engine)
 Session = scoped_session(session_factory)
 
+# Allows tab-completion to work using readline on OS X
+readline.parse_and_bind("bind ^I rl_complete")
+
+GENRES = ["Action", "Adventure", "Animation", "Comedy", "Crime", "Documentary",
+        "Drama", "Family", "Fantasy", "History", "Horror", "Music", "Mystery",
+        "Romance", "Science Fiction", "TV Movie", "Thriller", "War", "Western"]
+
 class FMDB(cmd.Cmd):
-    """Simple command processor example."""
+    """Command processor for the Foreign Movie Database."""
+    
+    
+    def __init__(self):
+        cmd.Cmd.__init__(self)
     
     prompt = "(FMDB) "
+
 
     def do_popular(self, args):
         """
@@ -49,6 +61,14 @@ class FMDB(cmd.Cmd):
 
         get_language(params)
     
+    def complete_language(self, text, line, begidx, endidx):
+        if text:
+            completions = [ f for f in lang.values() if f.lower().startswith(text.lower()) ]
+        else:
+            lang_list = lang.values()
+            completions = lang_list[:]
+        return completions
+    
     def do_rating(self, args):
         """
         Usage:
@@ -71,7 +91,11 @@ class FMDB(cmd.Cmd):
             
         Retrieve a list of popular foreign movies that include the specified genre <genre>
         """
-        params = args.split()
+        params = []
+        if args != "Science Fiction" and args != "TV Movie":
+            params = args.split()
+        else:
+            params.append(args)
         
         if len(params) != 1:
             print "*** invalid number of arguments"
@@ -79,6 +103,13 @@ class FMDB(cmd.Cmd):
 
         get_genre(params)
     
+    def complete_genre(self, text, line, begidx, endidx):
+        if text:
+            completions = [ f for f in GENRES if f.lower().startswith(text.lower()) ]
+        else:
+            completions = GENRES[:]
+        return completions
+
     def do_release(self, args):
         """
         Usage:
@@ -102,6 +133,12 @@ class FMDB(cmd.Cmd):
 def get_popular(args):
     """
     Get popular foreign movies
+
+    Args:
+        args - None
+
+    Return:
+        None
     """
     print "======================"
     print "Popular Foreign Movies"
@@ -116,16 +153,22 @@ def get_popular(args):
 def get_language(args):
     """
     Get foreign movie by language
-    """
-    print "===================="
-    print "{} movies".format(args[0])
-    print "===================="
     
+    Args:
+        args - None
+
+    Return:
+        None
+    """
     try:
         key = next(key for key, value in lang.items() if value == args[0])
     except StopIteration:
         print "Invalid language: \"{}\"".format(args[0])
         return
+    
+    print "===================="
+    print "{} movies".format(args[0])
+    print "===================="
 
     session = Session()
     q = session.query(Movie).filter(Movie.original_language == key)
@@ -136,6 +179,12 @@ def get_language(args):
 def get_rating(args):
     """
     Get foreign movies by rating
+    
+    Args:
+        args - None
+
+    Return:
+        None
     """
     print "=================="
     print "Ordered by ratings"
@@ -150,21 +199,37 @@ def get_rating(args):
 def get_genre(args):
     """
     Get foreign movies by genre
+    
+    Args:
+        args - One movie genre to sarch by
+
+    Return:
+        None
     """
+    if args[0] not in GENRES:
+        print "Invalid genre: \"{}\"".format(args[0])
+        return
+    
     print "==================="
     print "{} movies".format(args[0])
     print "==================="
     
-    genre_exists = False
     session = Session()
     q = session.query(Movie).filter(Movie.genres.any(Genre.name == args[0]))
     for movie in q:
             print u"{} [{}] \"{}\"".format(movie.release_date, lang[movie.original_language], movie.title)
     Session.remove()
 
+
 def get_release(args):
     """
     Get foreign movies by release date
+    
+    Args:
+        args - None
+
+    Return:
+        None
     """
     print "==================="
     print "Ordered by realease"
@@ -188,5 +253,5 @@ def main():
         print "Error: Main process exited."
         sys.exit(0)
 if __name__ == "__main__":
-    FMDB().cmdloop("Type \"help\" for available commands")
+    FMDB().cmdloop("Type \"?\" or \"help\" for available commands")
     #main()

@@ -1,4 +1,5 @@
-import multiprocessing, sys, time
+import sys, time
+from multiprocessing import Process, Queue, Event
 from config import API_KEY
 from model import create_db_engine, Movie, Genre, Cast, movie_genres
 from constants import MAX_ENTRIES, MAX_CAST, lang
@@ -6,7 +7,7 @@ import requests
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker, scoped_session
 import json
-from ifilms import init_movie_list, collect_data
+from ifilms import init_movie_list, collect_data, collector
 import readline
 import cmd
 
@@ -123,6 +124,19 @@ class FMDB(cmd.Cmd):
             print "*** invalid number of arguments"
             return
         get_release(params)
+    def do_exit(self, args):
+        """
+        Usage:
+            exit
+            
+        Exits the FMDB
+        """
+        params = args.split()
+        
+        if len(params) > 0:
+            print "*** invalid number of arguments"
+            return
+        return True
 
     def do_EOF(self, line):
         return True
@@ -243,15 +257,32 @@ def get_release(args):
 
 def main():
     try:
+        queue = Queue()
         init_movie_list()
-        mProcess = multiprocessing.Process(target=collect_data)
-        mProcess.daemon = True
-        mProcess.start()
-        print "Collecting data..."
-        time.sleep(200)
+
+        event = Event()
+
+        process_mgr = Process(target = collector, args = (queue, event))
+        process_mgr.start()
+        #print "Starting FMDB..."
+        #time.sleep(3)
+
+        FMDB().cmdloop("Type \"?\" or \"help\" for available commands")
+        print "\nWaiting for collector to exit..."
+        queue.put_nowait("stop")
+        event.set()
+        process_mgr.join()
+        queue.close()
+        print "FMDB Done"
     except:
-        print "Error: Main process exited."
+        print "\nError: Main process exiting."
+        print "Waiting for collector to exit..."
+        queue.put_nowait("stop")
+        event.set()
+        process_mgr.join()
+        queue.close()
+        print "FMDB Done"
         sys.exit(0)
 if __name__ == "__main__":
-    FMDB().cmdloop("Type \"?\" or \"help\" for available commands")
-    #main()
+    #FMDB().cmdloop("Type \"?\" or \"help\" for available commands")
+    main()

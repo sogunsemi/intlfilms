@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import sys
 from config import API_KEY
 from model import create_db_engine, Movie, Genre, Cast, movie_genres
@@ -9,6 +7,8 @@ import requests
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker, scoped_session
 import json
+from multiprocessing import Process, Queue, Event
+from Queue import Empty
 
 def init_movie_list():
     """
@@ -58,6 +58,7 @@ def init_movie_list():
         json_rsp = response.text
         parsed = json.loads(json_rsp)
         
+        # No more movies to check
         if i_page == parsed["total_pages"]:
             break
 
@@ -240,7 +241,8 @@ def collect_data():
 
         json_rsp = response.text
         parsed = json.loads(json_rsp)
-        
+
+        # No more movies to check
         if i_page == parsed["total_pages"]:
             break
 
@@ -277,7 +279,7 @@ def collect_data():
                 else:
                     m_exists = False
             except sqlalchemy.exc.SQLAlchemyError as e:
-                print "DB error while updating database"
+                print "Error while updating database"
                 print e
                 top_movies.pop()
                 m_count -= 1
@@ -333,17 +335,38 @@ def collect_data():
     
     # Remove movies from DB not in top list we got from TMDB
     q = session.query(Movie).filter(~Movie.m_id.in_(top_movies))
-    print "\nDeleted:"
+    #print "\nDeleted:"
     for movie in q:
-        print u"{}".format(movie.title)
+        #print u"{}".format(movie.title)
         del movie.cast[:]
         session.delete(movie)
     session.commit()
     Session.remove()
 
+def collector(queue, event):
+    while True:
+        #queue = multiprocessing.Queue()
+        mProcess = Process(target=collect_data)
+        
+        mProcess.start()
+        #print "\nCollector process {} started...".format(mProcess.pid)
+        
+        mProcess.join()
+        #print "Collector process {} finished.".format(mProcess.pid)
+        
+        event.wait(300)
+        
+        try:
+            item = queue.get_nowait()
+            if item == "stop":
+                break
+        except Empty:
+            pass
+        except:
+            break
+
 # Main entry point of program
 def main():
-    #init_db()
     init_movie_list()
     collect_data()
     

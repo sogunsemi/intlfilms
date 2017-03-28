@@ -2,7 +2,7 @@ import sys, time
 from multiprocessing import Process, Queue, Event
 from config import API_KEY
 from model import create_db_engine, Movie, Genre, Cast, movie_genres
-from constants import MAX_ENTRIES, MAX_CAST, lang
+from constants import MAX_ENTRIES, MAX_CAST, DATABASE_URL, lang
 import requests
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker, scoped_session
@@ -11,7 +11,8 @@ from ifilms import init_movie_list, collect_data, collector
 import readline
 import cmd
 
-engine = create_db_engine("sqlite:///sqllite_film.db")
+#engine = create_db_engine("sqlite:///sqllite_film.db")
+engine = create_db_engine(DATABASE_URL)
 session_factory = sessionmaker(engine)
 Session = scoped_session(session_factory)
 

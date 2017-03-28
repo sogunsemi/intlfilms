@@ -2,6 +2,7 @@
 
 MAX_ENTRIES = 10
 MAX_CAST = 5
+DATABASE_URL = "sqlite:///sqllite_film.db" 
 
 lang = {
 	'ab': 'Abkhaz',

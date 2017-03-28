@@ -2,8 +2,6 @@ from sqlalchemy import create_engine, Table, Column, ForeignKey, Integer, Float,
 from sqlalchemy.orm import sessionmaker, scoped_session, relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 
-#engine = create_engine('sqlite:///film.db')
-
 DecBase = declarative_base()
 
 movie_genres = Table(
@@ -91,9 +89,3 @@ if __name__ == "__main__":
             original_language=original_language, popularity=popularity,
             vote_average=vote_average, backdrop_path=backdrop_path,
             poster_path=poster_path, runtime=runtime, status=status)
-
-    #m1.genres.append(Genre(name="Thriller"))
-    #dbsession.add(m1)
-    #dbsession.add(m2)
-    #dbsession.commit()
-    #DBSession.remove()

@@ -1,7 +1,7 @@
 import sys
 from config import API_KEY
 from model import create_db_engine, Movie, Genre, Cast, movie_genres
-from constants import MAX_ENTRIES, MAX_CAST
+from constants import MAX_ENTRIES, MAX_CAST, DATABASE_URL
 import time
 import requests
 import sqlalchemy
@@ -16,7 +16,8 @@ def init_movie_list():
     data from the TMDB API with an initial movie list.
     """
 
-    engine = create_db_engine("sqlite:///sqllite_film.db")
+    #engine = create_db_engine("sqlite:///sqllite_film.db")
+    engine = create_db_engine(DATABASE_URL)
     session_factory = sessionmaker(engine)
     DBSession = scoped_session(session_factory)
 
@@ -216,7 +217,8 @@ def collect_data():
     Collects movie data from the TMDB REST API periodically
     and stores the information in the DB.
     """
-    engine = create_db_engine("sqlite:///sqllite_film.db")
+    #engine = create_db_engine("sqlite:///sqllite_film.db")
+    engine = create_db_engine(DATABASE_URL)
     session_factory = sessionmaker(engine)
     Session = scoped_session(session_factory)
 

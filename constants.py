@@ -4,7 +4,12 @@ MAX_ENTRIES = 10
 MAX_CAST = 5
 DATABASE_URL = "sqlite:///sqllite_film.db" 
 
-lang = {
+# Tab-completion for genre <genre>
+GENRES = ["Action", "Adventure", "Animation", "Comedy", "Crime", "Documentary",
+        "Drama", "Family", "Fantasy", "History", "Horror", "Music", "Mystery",
+        "Romance", "Science Fiction", "TV Movie", "Thriller", "War", "Western"]
+
+LANG = {
 	'ab': 'Abkhaz',
 	'aa': 'Afar',
 	'af': 'Afrikaans',

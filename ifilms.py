@@ -190,6 +190,9 @@ def add_genres(Session, details):
             genre_row = session.query(Genre).filter(Genre.name == genre_name).one_or_none()
             if genre_row is None:
                 m_genres.append(Genre(name=genre_name))
+                # If genre is not in our  constants.GENRES list, add it
+                if genre_name not in constants.GENRES:
+                    constants.GENRES.append(genre_name)
             else:
                 m_genres.append(genre_row)
     except sqlalchemy.orm.exc.MultipleResultsFound as e:

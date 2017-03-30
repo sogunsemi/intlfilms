@@ -2,7 +2,8 @@ import sys, time
 from multiprocessing import Process, Queue, Event
 from config import API_KEY
 from model import create_db_engine, Movie, Genre, Cast, movie_genres
-from constants import MAX_ENTRIES, MAX_CAST, DATABASE_URL, lang
+import constants
+from constants import MAX_ENTRIES, MAX_CAST, DATABASE_URL, LANG
 import requests
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker, scoped_session
@@ -19,13 +20,8 @@ Session = scoped_session(session_factory)
 # Allows tab-completion to work using readline on OS X
 readline.parse_and_bind("bind ^I rl_complete")
 
-GENRES = ["Action", "Adventure", "Animation", "Comedy", "Crime", "Documentary",
-        "Drama", "Family", "Fantasy", "History", "Horror", "Music", "Mystery",
-        "Romance", "Science Fiction", "TV Movie", "Thriller", "War", "Western"]
-
 class FMDB(cmd.Cmd):
-    """Command processor for the Foreign Movie Database."""
-    
+    """Command processor for the Foreign Movie Database"""
     
     def __init__(self):
         cmd.Cmd.__init__(self)
@@ -65,9 +61,9 @@ class FMDB(cmd.Cmd):
     
     def complete_language(self, text, line, begidx, endidx):
         if text:
-            completions = [ f for f in lang.values() if f.lower().startswith(text.lower()) ]
+            completions = [ f for f in LANG.values() if f.lower().startswith(text.lower()) ]
         else:
-            lang_list = lang.values()
+            lang_list = LANG.values()
             completions = lang_list[:]
         return completions
     
@@ -107,9 +103,9 @@ class FMDB(cmd.Cmd):
     
     def complete_genre(self, text, line, begidx, endidx):
         if text:
-            completions = [ f for f in GENRES if f.lower().startswith(text.lower()) ]
+            completions = [ f for f in constants.GENRES if f.lower().startswith(text.lower()) ]
         else:
-            completions = GENRES[:]
+            completions = constants.GENRES[:]
         return completions
 
     def do_release(self, args):
@@ -162,7 +158,7 @@ def get_popular(args):
     session = Session()
     q = session.query(Movie)
     for movie in q:
-        print u"{} [{}] \"{}\"".format(movie.release_date, lang[movie.original_language], movie.title)
+        print u"{} [{}] \"{}\"".format(movie.release_date, LANG[movie.original_language], movie.title)
     Session.remove()
 
 def get_language(args):
@@ -176,7 +172,7 @@ def get_language(args):
         None
     """
     try:
-        key = next(key for key, value in lang.items() if value == args[0])
+        key = next(key for key, value in LANG.items() if value == args[0])
     except StopIteration:
         print "Invalid language: \"{}\"".format(args[0])
         return
@@ -188,7 +184,7 @@ def get_language(args):
     session = Session()
     q = session.query(Movie).filter(Movie.original_language == key)
     for movie in q:
-        print u"{} [{}] \"{}\"".format(movie.release_date, lang[movie.original_language], movie.title)
+        print u"{} [{}] \"{}\"".format(movie.release_date, LANG[movie.original_language], movie.title)
     Session.remove()
     
 def get_rating(args):
@@ -208,7 +204,7 @@ def get_rating(args):
     session = Session()
     q = session.query(Movie).order_by(sqlalchemy.desc(Movie.vote_average))
     for movie in q:
-        print u"{} {} [{}] \"{}\"".format(movie.vote_average, movie.release_date, lang[movie.original_language], movie.title)
+        print u"{} {} [{}] \"{}\"".format(movie.vote_average, movie.release_date, LANG[movie.original_language], movie.title)
     Session.remove()
 
 def get_genre(args):
@@ -221,7 +217,7 @@ def get_genre(args):
     Return:
         None
     """
-    if args[0] not in GENRES:
+    if args[0] not in constants.GENRES:
         print "Invalid genre: \"{}\"".format(args[0])
         return
     
@@ -232,7 +228,7 @@ def get_genre(args):
     session = Session()
     q = session.query(Movie).filter(Movie.genres.any(Genre.name == args[0]))
     for movie in q:
-            print u"{} [{}] \"{}\"".format(movie.release_date, lang[movie.original_language], movie.title)
+            print u"{} [{}] \"{}\"".format(movie.release_date, LANG[movie.original_language], movie.title)
     Session.remove()
 
 
@@ -253,7 +249,7 @@ def get_release(args):
     session = Session()
     q = session.query(Movie).order_by(sqlalchemy.desc(Movie.release_date))
     for movie in q:
-        print u"{} [{}] \"{}\"".format(movie.release_date, lang[movie.original_language], movie.title)
+        print u"{} [{}] \"{}\"".format(movie.release_date, LANG[movie.original_language], movie.title)
     Session.remove()
 
 def main():
